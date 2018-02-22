@@ -1,0 +1,47 @@
+name: missing_citations
+title: "<form-title>"
+
+fields:
+  - class: "FieldLayout"
+    label: "<citation-label>"
+    align: left
+    help: "<citation-help>"
+    classes: ['inline-field']
+    fieldWidget:
+      name: "citation_needed"
+      class: "ButtonSelectWidget"
+      items:
+        - class: "ButtonOptionWidget"
+          data: true
+          label: "<citation-true-label>"
+        - class: "ButtonOptionWidget"
+          data: false
+          label: "<citation-false-label>"
+  - class: FieldLayout
+    label: "<unsure-label>"
+    align: right
+    classes: ['inline-field']
+    fieldWidget:
+      name: "unsure"
+      class: CheckboxInputWidget
+  - class: "FieldLayout"
+    label: "<notes-label>"
+    align: top
+    help: "<reason-help>"
+    fieldWidget:
+      name: "notes"
+      class: "TextInputWidget"
+      multiline: false
+      required: false
+
+i18n:
+  en:
+    form-title: "Labeling Unsourced Statements"
+    notes-label: "Why?"
+    citation-label: "Should this statement have a citation?"
+    citation-true-label: "yes"
+    citation-false-label: "no"
+    unsure-label: "unsure"
+    citation-help: "If you were reading this sentence in a Wikipedia article, would you add a {citation needed} tag?"
+    reason-help: "Please give us the reason for your decision in a sentence or to."
+
