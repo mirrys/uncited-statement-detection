@@ -90,7 +90,7 @@ public class HTMLExtractor {
         while ((line = reader.readLine()) != null) {
             String[] data = line.split("\t");
             String entity = data[0];
-            String entity_body_html = StringEscapeUtils.unescapeJson(data[1]);
+            String entity_body_html = data[1].replaceAll("\\n", "\n");
 
             Document entity_doc = Jsoup.parse(entity_body_html);
             Map<String, Map<String, String>> entity_citations = wp.extractCitationFromWikiPage(entity_doc);
@@ -133,7 +133,7 @@ public class HTMLExtractor {
                 } else {
                     int start = paragraph_start;
                     int offset = start + prg_text.length();
-                    prg_text = prg_text.replaceAll("\n", "\\n");
+                    prg_text = "<div class=\"unsourced-statement\">" + prg_text.replaceAll("\n", "\\n") + "</div>";
                     sb.append(page_id).append("\t").append(revision_id).append("\t").append(doc.title()).append("\t").
                             append(section_name).append("\t").append(start).append("\t").append(offset).append("\t").
                             append(prg_text).append("\t").append("N/A").append("\t").append("N/A").append("\n");
@@ -173,15 +173,18 @@ public class HTMLExtractor {
             Elements scs = sentence_doc.getElementsByClass("mw-ref");
 
             //in case we want to remove the citations from the sentence
-            sentence = remove_citations ? sentence.replaceAll("<sup (.*?)>(.*?)</sup>", "") : sentence;
             sentence = StringEscapeUtils.unescapeHtml4(sentence);
 
             int start = paragraph_start + prg_text.indexOf(sentence);
             int offset = start + sentence.length();
 
+
+            //this is only for display
+            sentence = remove_citations ? sentence.replaceAll("<sup (.*?)>(.*?)</sup>", "") : sentence;
+
             sb.append(page_id).append("\t").append(revision_id).append("\t").append(title).append("\t").
                     append(section_name).append("\t").append(start).append("\t").append(offset).append("\t").
-                    append(sentence).append("\t").append(StringEscapeUtils.escapeJson(prg_text)).append("\t");
+                    append(sentence).append("\t").append(prg_text.replaceAll("\n", "\\n")).append("\t");
 
             for (Element sc : scs) {
                 sb.append(getCitationAttributes(sc, citations, title_tmp));
@@ -207,8 +210,7 @@ public class HTMLExtractor {
                 String a_href = a_in.attributes().get("href");
                 if (a_href.contains(title)) {
                     a_href = a_href.replace("./" + title + "#", "");
-                    Map<String, String> cite_attributes = citations.get(a_href);
-                    sb.append(cite_attributes.toString()).append("\t");
+                    sb.append(citations.get(a_href)).append("\t");
                 }
             }
         }
