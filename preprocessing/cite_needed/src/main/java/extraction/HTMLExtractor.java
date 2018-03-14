@@ -26,13 +26,10 @@ public class HTMLExtractor {
         String[] args1 = {"-entity_seeds", "/Users/besnik/Documents/L3S/unsourced_statements/featured_links.csv",
                 "-out_dir", "/Users/besnik/Documents/L3S/unsourced_statements/html_data/",
                 "-wiki_dump", "/Users/besnik/Documents/L3S/unsourced_statements/html_data/",
-                 "-option", "statements"};
-
-        String[] lang = {"enwiki", "frwiki", "itwiki"};
-        String[] clean = {"true", "false"};
+                "-option", "statements", "-lang", "enwiki", "-clean_statements", "true"};
 
         args = args1;
-        String entity_seeds = "", out_dir = "", option = "", wiki_dump = "";
+        String entity_seeds = "", out_dir = "", option = "", wiki_dump = "", lang = "";
 
         for (int i = 0; i < args.length; i++) {
             if (args[i].equals("-entity_seeds")) {
@@ -43,19 +40,12 @@ public class HTMLExtractor {
                 option = args[++i];
             } else if (args[i].equals("-wiki_dump")) {
                 wiki_dump = args[++i];
+            } else if (args[i].equals("-lang")) {
+                lang = args[++i];
+            } else if (args[i].equals("-clean_statements")) {
+                remove_citations = args[++i].equals("true");
             }
         }
-
-        for (String lg: lang) {
-            for (String cl : clean) {
-                remove_citations = cl.equals("true");
-                String wd = wiki_dump + "/" + lg+ "/wiki_subset.txt";
-                String od = out_dir  + "/" + lg;
-                extractCitations(wd, od, lg);
-            }
-        }
-        System.exit(0);
-
 
         //load the list of entities for which we want to perform the analysis.
         Map<String, Integer> entities = new HashMap<>();
@@ -68,14 +58,13 @@ public class HTMLExtractor {
             entities.put(tmp[2].trim(), Integer.parseInt(tmp[0]));
         }
 
-//        if (option.equals("extract")) {
-//            extractHTMLWikiPageContent(entities, out_dir, lang);
-//        }
-//        else if (option.equals("statements")) {
-//            wiki_dump += "/" + lang + "/wiki_subset.txt";
-//            out_dir += "/" + lang;
-//            extractCitations(wiki_dump, out_dir, lang);
-//        }
+        if (option.equals("extract")) {
+            extractHTMLWikiPageContent(entities, out_dir, lang);
+        } else if (option.equals("statements")) {
+            wiki_dump += "/" + lang + "/wiki_subset.txt";
+            out_dir += "/" + lang;
+            extractCitations(wiki_dump, out_dir, lang);
+        }
     }
 
     /**
