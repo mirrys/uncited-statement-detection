@@ -25,17 +25,19 @@ public class HTMLWikiParser {
     public String getSectionName(Element section, String section_id) {
         String section_name = "";
         if (section_id.equals("0")) {
-            section_name = "MAIN_SECTION";
+            return "MAIN_SECTION";
         }
         if (!section.select("h2").isEmpty()) {
-            section_name = section.select("h2").first().text();
-        } else if (!section.select("h3").isEmpty()) {
-            section_name = section.select("h3").first().text();
-        } else if (!section.select("h4").isEmpty()) {
-            section_name = section.select("h4").first().text();
-        } else if (!section.select("h5").isEmpty()) {
-            section_name = section.select("h5").first().text();
+            return section.select("h2").first().text();
         }
+
+//        else if (!section.select("h3").isEmpty()) {
+//            section_name = section.select("h3").first().text();
+//        } else if (!section.select("h4").isEmpty()) {
+//            section_name = section.select("h4").first().text();
+//        } else if (!section.select("h5").isEmpty()) {
+//            section_name = section.select("h5").first().text();
+//        }
 
         return section_name;
     }

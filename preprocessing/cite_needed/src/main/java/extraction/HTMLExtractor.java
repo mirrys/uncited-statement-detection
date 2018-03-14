@@ -26,25 +26,35 @@ public class HTMLExtractor {
         String[] args1 = {"-entity_seeds", "/Users/besnik/Documents/L3S/unsourced_statements/featured_links.csv",
                 "-out_dir", "/Users/besnik/Documents/L3S/unsourced_statements/html_data/",
                 "-wiki_dump", "/Users/besnik/Documents/L3S/unsourced_statements/html_data/",
-                "-lang", "frwiki", "-option", "statements", "-clean_citations", "true"};
+                 "-option", "statements"};
+
+        String[] lang = {"enwiki", "frwiki", "itwiki"};
+        String[] clean = {"true", "false"};
+
         args = args1;
-        String entity_seeds = "", out_dir = "", lang = "", option = "", wiki_dump = "";
+        String entity_seeds = "", out_dir = "", option = "", wiki_dump = "";
 
         for (int i = 0; i < args.length; i++) {
             if (args[i].equals("-entity_seeds")) {
                 entity_seeds = args[++i];
             } else if (args[i].equals("-out_dir")) {
                 out_dir = args[++i];
-            } else if (args[i].equals("-lang")) {
-                lang = args[++i];
             } else if (args[i].equals("-option")) {
                 option = args[++i];
             } else if (args[i].equals("-wiki_dump")) {
                 wiki_dump = args[++i];
-            } else if (args[i].equals("-clean_citations")) {
-                remove_citations = args[++i].equals("true");
             }
         }
+
+        for (String lg: lang) {
+            for (String cl : clean) {
+                remove_citations = cl.equals("true");
+                String wd = wiki_dump + "/" + lg+ "/wiki_subset.txt";
+                String od = out_dir  + "/" + lg;
+                extractCitations(wd, od, lg);
+            }
+        }
+        System.exit(0);
 
 
         //load the list of entities for which we want to perform the analysis.
@@ -58,13 +68,14 @@ public class HTMLExtractor {
             entities.put(tmp[2].trim(), Integer.parseInt(tmp[0]));
         }
 
-        if (option.equals("extract")) {
-            extractHTMLWikiPageContent(entities, out_dir, lang);
-        } else if (option.equals("statements")) {
-            wiki_dump += "/" + lang + "/wiki_subset.txt";
-            out_dir += "/" + lang;
-            extractCitations(wiki_dump, out_dir, lang);
-        }
+//        if (option.equals("extract")) {
+//            extractHTMLWikiPageContent(entities, out_dir, lang);
+//        }
+//        else if (option.equals("statements")) {
+//            wiki_dump += "/" + lang + "/wiki_subset.txt";
+//            out_dir += "/" + lang;
+//            extractCitations(wiki_dump, out_dir, lang);
+//        }
     }
 
     /**
@@ -83,13 +94,13 @@ public class HTMLExtractor {
         String out_file = !remove_citations ? out_dir + "/statements.txt" : out_dir + "/clean_statements.txt";
 
         HTMLWikiParser wp = new HTMLWikiParser();
-        String header = "entity_id\trevision_id\tentity_title\tsection\tstart\toffset\tstatement\tparagraph\tcitations\n";
+        String header = "entity_id\trevision_id\ttimestamp\tentity_title\tsection\tstart\toffset\tstatement\tparagraph\tcitations\n";
         FileUtils.saveText(header, out_file);
 
         //parse the individual entities.
         while ((line = reader.readLine()) != null) {
             String[] data = line.split("\t");
-            String entity = data[0];
+            String entity = data[0].replaceAll(" ", "_");
             String entity_body_html = data[1].replaceAll("\\n", "\n");
 
             Document entity_doc = Jsoup.parse(entity_body_html);
@@ -101,19 +112,27 @@ public class HTMLExtractor {
     }
 
     private static void extractStatementCitations(String entity_text, Document doc, Map<String, Map<String, String>> citations, String out_file, HTMLWikiParser wp, String lang) {
-        String page_id = "", revision_id = "";
-        Elements meta_data = doc.head().select("meta");
+        String page_id = "", revision_id = "", timestamp = "";
+        Elements meta_data = doc.select("meta");
         for (Element md : meta_data) {
             if (md.attr("property").equals("mw:pageId")) {
                 page_id = md.attr("content");
             }
+
+            if (md.attr("property").equals("mw:TimeUuid")) {
+                timestamp = md.attr("content");
+            }
         }
         revision_id = doc.select("html").first().attr("about").replace("http://" + lang + ".wikipedia.org/wiki/Special:Redirect/revision/", "");
         Elements sections = doc.select("section");
+        String title = doc.title().replaceAll(" ", "_");
 
         for (Element section : sections) {
             String section_id = section.attr("data-mw-section-id");
             String section_name = wp.getSectionName(section, section_id);
+            if (section_name.isEmpty()) {
+                continue;
+            }
 
             StringBuffer sb = new StringBuffer();
             Elements paragraphs = section.select("p");
@@ -129,12 +148,12 @@ public class HTMLExtractor {
                 //the paragraph contains citations
                 if (!prg.select("sup").isEmpty()) {
                     //extract sentences and the corresponding citations.
-                    extractSentenceCitations(prg, citations, sb, page_id, revision_id, section_name, doc.title(), paragraph_start);
+                    extractSentenceCitations(prg, citations, sb, page_id, revision_id, timestamp, section_name, title, paragraph_start);
                 } else {
                     int start = paragraph_start;
                     int offset = start + prg_text.length();
-                    prg_text = "<div class=\"unsourced-statement\">" + prg_text.replaceAll("\n", "\\n") + "</div>";
-                    sb.append(page_id).append("\t").append(revision_id).append("\t").append(doc.title()).append("\t").
+                    prg_text = "<div class=\"unsourced-statement\">" + prg_text.replace("\n", "\\n") + "</div>";
+                    sb.append(page_id).append("\t").append(revision_id).append("\t").append(timestamp).append("\t").append(title).append("\t").
                             append(section_name).append("\t").append(start).append("\t").append(offset).append("\t").
                             append(prg_text).append("\t").append("N/A").append("\t").append("N/A").append("\n");
                 }
@@ -156,16 +175,15 @@ public class HTMLExtractor {
      * @param title
      */
     private static void extractSentenceCitations(Element paragraph, Map<String, Map<String, String>> citations, StringBuffer sb,
-                                                 String page_id, String revision_id, String section_name, String title, int paragraph_start) {
+                                                 String page_id, String revision_id, String timestamp, String section_name, String title, int paragraph_start) {
         String prg_text = StringEscapeUtils.unescapeHtml4(paragraph.toString());
         String prg_raw_text = paragraph.toString();
         //split text into sentences.
         String[] sentences = prg_raw_text.split("\\.\\s+");
 
-        String title_tmp = title.replaceAll(" ", "_");
         for (String sentence : sentences) {
             //the sentence does not contain any citation
-            if (!sentence.contains("<sup about=")) {
+            if (!sentence.contains("<sup about=") || sentence.length() < 200) {
                 continue;
             }
 
@@ -178,16 +196,16 @@ public class HTMLExtractor {
             int start = paragraph_start + prg_text.indexOf(sentence);
             int offset = start + sentence.length();
 
-
             //this is only for display
             sentence = remove_citations ? sentence.replaceAll("<sup (.*?)>(.*?)</sup>", "") : sentence;
+            sentence = sentence.replace("\n", "\\n");
 
-            sb.append(page_id).append("\t").append(revision_id).append("\t").append(title).append("\t").
+            sb.append(page_id).append("\t").append(revision_id).append("\t").append(timestamp).append("\t").append(title).append("\t").
                     append(section_name).append("\t").append(start).append("\t").append(offset).append("\t").
-                    append(sentence).append("\t").append(prg_text.replaceAll("\n", "\\n")).append("\t");
+                    append(sentence).append("\t").append(prg_text.replace("\n", "\\n")).append("\t");
 
             for (Element sc : scs) {
-                sb.append(getCitationAttributes(sc, citations, title_tmp));
+                sb.append(getCitationAttributes(sc, citations, title));
             }
             sb.append("\n");
         }
