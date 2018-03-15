@@ -12,9 +12,12 @@ language_extended=['english','french','italian']
 indir='../data_local/html_data/'
 infilename='clean_statements.txt'
 outdir_parsed='../data_clean/'
+outdir_short='../data_short/'
 positives={}
 infiles={}
 outfiles_parsed={}
+outfiles_short={}
+MAX_CLASS_NSAMPLES=2000
 
 class MyHTMLParser(HTMLParser):
 	data=[]
@@ -24,7 +27,8 @@ class MyHTMLParser(HTMLParser):
 def load_languages():
     for lan,lext in zip(languages,language_extended):
         infiles[lan]=indir+lan+'wiki/'+infilename
-        outfiles_parsed[lan]=outdir_parsed+lext+'.tsv'
+        outfiles_parsed[lan]=outdir_parsed+lext+'_short.tsv'
+        outfiles_short[lan]=outdir_short+lext+'.tsv'
 
 def clean_sentence(sentence):
 	cleansent=sentence.replace('\\n', '')
@@ -44,8 +48,9 @@ parser =  MyHTMLParser()
 load_languages()
 
 for lan in languages:
-	positives=set([])
-	negatives=set([])
+	positives=[]
+	negatives=[]
+	original={}
 	parsed={}
 	f=open(infiles[lan],'rU')
 	f.readline()
@@ -60,16 +65,21 @@ for lan in languages:
 		cleansent=clean_sentence(sentence)
 		parser.data=[]
 		unique=hashlib.sha224(cleansent).hexdigest()
+		original[unique]=line
 		parsed[unique]=('\t').join(row[:7])+'\t'+cleansent+'\t'+str(label)+'\n'
 		if len(cleansent.split(' '))>5:
 			if label==1:
-				positives.add(unique)
+				positives.append(unique)
 			else:
-				negatives.add(unique)
+				negatives.append(unique)
+	fo_short=open(outfiles_short[lan],'w')
 	fo_parsed=open(outfiles_parsed[lan],'w')
 	alldata=[]
-	alldata=list(negatives)+list(positives)
+	shuffle(positives)
+	l=max(len(negatives),MAX_CLASS_NSAMPLES)
+	alldata=negatives+positives[:len(negatives)]
 	for id in alldata:
+		fo_short.write(original[id])
 		fo_parsed.write(parsed[id])
 
 
