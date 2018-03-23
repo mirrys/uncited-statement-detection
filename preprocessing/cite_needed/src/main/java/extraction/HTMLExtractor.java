@@ -26,7 +26,7 @@ public class HTMLExtractor {
         String[] args1 = {"-entity_seeds", "/Users/besnik/Documents/L3S/unsourced_statements/featured_links.csv",
                 "-out_dir", "/Users/besnik/Documents/L3S/unsourced_statements/html_data/",
                 "-wiki_dump", "/Users/besnik/Documents/L3S/unsourced_statements/html_data/",
-                "-option", "statements", "-lang", "enwiki", "-clean_statements", "true"};
+                "-option", "statements", "-lang", "itwiki", "-clean_statements", "true"};
 
         args = args1;
         String entity_seeds = "", out_dir = "", option = "", wiki_dump = "", lang = "";
@@ -235,7 +235,7 @@ public class HTMLExtractor {
      */
     public static void extractHTMLWikiPageContent(Map<String, Integer> entities, String out_dir, String lang) throws IOException {
         FileUtils.checkDir(out_dir + "/" + lang + "/");
-        String out_file = out_dir + "/" + lang + "/wiki_subset.json";
+        String out_file = out_dir + "/" + lang + "/wiki_subset.txt";
         lang = lang.replace("wiki", "");
         for (String entity : entities.keySet()) {
             String entity_label = URLEncoder.encode(entity);
@@ -243,7 +243,7 @@ public class HTMLExtractor {
             String url = "https://" + lang + ".wikipedia.org/api/rest_v1/page/html/" + entity_label;
             String url_body = WebUtils.getURLContent(url);
 
-            String out_json = entity + "\t" + StringEscapeUtils.escapeJson(url_body) + "\n";
+            String out_json = entity + "\t" + url_body.replaceAll("\n", "\\n") + "\n";
             FileUtils.saveText(out_json, out_file, true);
 
             System.out.printf("Finished extracting HTML content for entity %s.\n", entity);
