@@ -13,8 +13,7 @@ import utils.WebUtils;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.net.URLEncoder;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by besnik on 2/27/18.
@@ -26,7 +25,7 @@ public class HTMLExtractor {
         String[] args1 = {"-entity_seeds", "/Users/besnik/Documents/L3S/unsourced_statements/featured_links.csv",
                 "-out_dir", "/Users/besnik/Documents/L3S/unsourced_statements/html_data/",
                 "-wiki_dump", "/Users/besnik/Documents/L3S/unsourced_statements/html_data/",
-                "-option", "statements", "-lang", "itwiki", "-clean_statements", "true"};
+                "-option", "sample", "-lang", "enwiki", "-clean_statements", "false"};
 
         args = args1;
         String entity_seeds = "", out_dir = "", option = "", wiki_dump = "", lang = "";
@@ -64,7 +63,80 @@ public class HTMLExtractor {
             wiki_dump += "/" + lang + "/wiki_subset.txt";
             out_dir += "/" + lang;
             extractCitations(wiki_dump, out_dir, lang);
+        } else if (option.equals("sample")) {
+            out_dir += "/" + lang + "/";
+            sampleStatements(out_dir);
         }
+    }
+
+    public static Set<Integer> sampleLines(String file, int num_samples) throws IOException {
+        Random rand = new Random(100);
+        //count num lines
+        int num_lines = 0;
+
+        Map<Boolean, Set<Integer>> lines = new HashMap<>();
+        lines.put(false, new HashSet<>());
+        lines.put(true, new HashSet<>());
+        BufferedReader cl_reader = FileUtils.getFileReader(file);
+        String line;
+        while ((line = cl_reader.readLine()) != null) {
+            boolean is_unsourced = line.endsWith("N/A");
+            lines.get(is_unsourced).add(num_lines);
+            num_lines++;
+        }
+        cl_reader.close();
+
+
+        List<Integer> unsourced = new ArrayList<>(lines.get(true));
+        List<Integer> sourced = new ArrayList<>(lines.get(true));
+
+        Collections.shuffle(unsourced, rand);
+        Collections.shuffle(sourced, rand);
+
+        Set<Integer> sampled_indices = new HashSet<>();
+        sampled_indices.addAll(unsourced.subList(0, num_samples));
+        sampled_indices.addAll(sourced.subList(0, num_samples));
+        return sampled_indices;
+    }
+
+    /**
+     * Store the sampled lines.
+     *
+     * @param lines
+     * @param file
+     * @param out_file
+     * @throws IOException
+     */
+    public static void saveSampledStatements(Set<Integer> lines, String file, String out_file) throws IOException {
+        int line_number = 0;
+        String line;
+        BufferedReader reader = FileUtils.getFileReader(file);
+
+        StringBuffer sb = new StringBuffer();
+        while ((line = reader.readLine()) != null) {
+            if (lines.contains(line_number)) {
+                sb.append(line).append("\n");
+            }
+            line_number++;
+        }
+
+        FileUtils.saveText(sb.toString(), out_file);
+    }
+
+    /**
+     * Sample statements.
+     *
+     * @param out_dir
+     * @throws IOException
+     */
+    public static void sampleStatements(String out_dir) throws IOException {
+        int num_samples = 1000;
+        Set<Integer> lines_cl = sampleLines(out_dir + "/clean_statements.txt", num_samples);
+        Set<Integer> lines = sampleLines(out_dir + "/statements.txt", num_samples);
+
+        //store the sampled lines.
+        saveSampledStatements(lines, out_dir + "/statements.txt", out_dir + "/sampled_statements.txt");
+        saveSampledStatements(lines_cl, out_dir + "/clean_statements.txt", out_dir + "/sampled_clean_statements.txt");
     }
 
     /**
@@ -90,7 +162,7 @@ public class HTMLExtractor {
         while ((line = reader.readLine()) != null) {
             String[] data = line.split("\t");
             String entity = data[0].replaceAll(" ", "_");
-            String entity_body_html = data[1].replaceAll("\\n", "\n");
+            String entity_body_html = data[1];
 
             Document entity_doc = Jsoup.parse(entity_body_html);
             Map<String, Map<String, String>> entity_citations = wp.extractCitationFromWikiPage(entity_doc);
@@ -144,7 +216,7 @@ public class HTMLExtractor {
                     prg_text = "<div class=\"unsourced-statement\">" + prg_text.replace("\n", "\\n") + "</div>";
                     sb.append(page_id).append("\t").append(revision_id).append("\t").append(timestamp).append("\t").append(title).append("\t").
                             append(section_name).append("\t").append(start).append("\t").append(offset).append("\t").
-                            append(prg_text).append("\t").append("N/A").append("\t").append("N/A").append("\n");
+                            append(StringEscapeUtils.unescapeHtml4(prg_text)).append("\t").append("N/A").append("\t").append("N/A").append("\n");
                 }
             }
 
@@ -165,33 +237,34 @@ public class HTMLExtractor {
      */
     private static void extractSentenceCitations(Element paragraph, Map<String, Map<String, String>> citations, StringBuffer sb,
                                                  String page_id, String revision_id, String timestamp, String section_name, String title, int paragraph_start) {
-        String prg_text = StringEscapeUtils.unescapeHtml4(paragraph.toString());
         String prg_raw_text = paragraph.toString();
         //split text into sentences.
         String[] sentences = prg_raw_text.split("\\.\\s+");
 
-        for (String sentence : sentences) {
+        for (int i = 0; i < sentences.length; i++) {
+            String sentence = StringEscapeUtils.unescapeHtml4(sentences[i]);
             //the sentence does not contain any citation
             if (!sentence.contains("<sup about=") || sentence.length() < 200) {
                 continue;
             }
 
-            Document sentence_doc = Jsoup.parse(sentence);
+            Document sentence_doc = Jsoup.parse(sentences[i]);
             Elements scs = sentence_doc.getElementsByClass("mw-ref");
 
             //in case we want to remove the citations from the sentence
-            sentence = StringEscapeUtils.unescapeHtml4(sentence);
-
-            int start = paragraph_start + prg_text.indexOf(sentence);
+            int start = paragraph_start + prg_raw_text.indexOf(sentences[i]);
             int offset = start + sentence.length();
+            if (sentences.length != 1 && i != sentences.length - 1) {
+                offset += 1;
+                sentence += ".";
+            }
 
             //this is only for display
             sentence = remove_citations ? sentence.replaceAll("<sup (.*?)>(.*?)</sup>", "") : sentence;
-            sentence = sentence.replace("\n", "\\n");
 
             sb.append(page_id).append("\t").append(revision_id).append("\t").append(timestamp).append("\t").append(title).append("\t").
                     append(section_name).append("\t").append(start).append("\t").append(offset).append("\t").
-                    append(sentence).append("\t").append(prg_text.replace("\n", "\\n")).append("\t");
+                    append(sentence).append("\t").append(StringEscapeUtils.unescapeHtml4(prg_raw_text)).append("\t");
 
             for (Element sc : scs) {
                 sb.append(getCitationAttributes(sc, citations, title));
@@ -236,14 +309,15 @@ public class HTMLExtractor {
     public static void extractHTMLWikiPageContent(Map<String, Integer> entities, String out_dir, String lang) throws IOException {
         FileUtils.checkDir(out_dir + "/" + lang + "/");
         String out_file = out_dir + "/" + lang + "/wiki_subset.txt";
+        FileUtils.saveText("", out_file);
         lang = lang.replace("wiki", "");
         for (String entity : entities.keySet()) {
             String entity_label = URLEncoder.encode(entity);
             //https://en.wikipedia.org/api/rest_v1/page/html/
             String url = "https://" + lang + ".wikipedia.org/api/rest_v1/page/html/" + entity_label;
-            String url_body = WebUtils.getURLContent(url);
+            String url_body = WebUtils.getURLContent(url).replaceAll("<!--(.*?)-->", "");
 
-            String out_json = entity + "\t" + url_body.replaceAll("\n", "\\n") + "\n";
+            String out_json = entity + "\t" + url_body.replace("\n", "\\n") + "\n";
             FileUtils.saveText(out_json, out_file, true);
 
             System.out.printf("Finished extracting HTML content for entity %s.\n", entity);
