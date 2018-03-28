@@ -1,5 +1,6 @@
 package parser;
 
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.json.JSONObject;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -71,19 +72,23 @@ public class HTMLWikiParser {
         //extracts inline citations
         Elements elements = doc.getElementsByClass("mw-ref");
         for (Element in_cite : elements) {
-            JSONObject data_mw = new JSONObject(in_cite.attributes().get("data-mw"));
-            if (data_mw.has("body") && data_mw.getJSONObject("body").has("id")) {
-                String note_ref_cite_id = data_mw.getJSONObject("body").getString("id").replace("mw-reference-text-", "");
-                inline_citations.put(note_ref_cite_id, in_cite.toString());
-            } else {
-                Elements a_ins = in_cite.select("a");
-                for (Element a_in : a_ins) {
-                    String a_href = a_in.attributes().get("href");
-                    if (a_href.contains(title)) {
-                        a_href = a_href.replace("./" + title + "#", "");
-                        inline_citations.put(a_href, in_cite.toString());
+            try {
+                JSONObject data_mw = new JSONObject(in_cite.attr("data-mw"));
+                if (data_mw.has("body") && data_mw.getJSONObject("body").has("id")) {
+                    String note_ref_cite_id = data_mw.getJSONObject("body").getString("id").replace("mw-reference-text-", "");
+                    inline_citations.put(note_ref_cite_id, in_cite.toString());
+                } else {
+                    Elements a_ins = in_cite.select("a");
+                    for (Element a_in : a_ins) {
+                        String a_href = a_in.attributes().get("href");
+                        if (a_href.contains(title)) {
+                            a_href = a_href.replace("./" + title + "#", "");
+                            inline_citations.put(a_href, in_cite.toString());
+                        }
                     }
                 }
+            } catch (Exception e) {
+                System.out.println("Error parsing " + StringEscapeUtils.unescapeHtml4(in_cite.toString()));
             }
 
         }
