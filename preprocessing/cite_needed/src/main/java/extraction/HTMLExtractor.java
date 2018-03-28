@@ -22,10 +22,10 @@ public class HTMLExtractor {
     public static boolean remove_citations;
 
     public static void main(String[] args) throws IOException {
-        String[] args1 = {"-entity_seeds", "/Users/besnik/Documents/L3S/unsourced_statements/featured_links.csv",
+        String[] args1 = {"-entity_seeds", "/Users/besnik/Documents/L3S/unsourced_statements/all_featured_links.csv",
                 "-out_dir", "/Users/besnik/Documents/L3S/unsourced_statements/html_data/",
                 "-wiki_dump", "/Users/besnik/Documents/L3S/unsourced_statements/html_data/",
-                "-option", "sample", "-lang", "enwiki", "-clean_statements", "false"};
+                "-option", "sample", "-lang", "itwiki", "-clean_statements", "true"};
 
         args = args1;
         String entity_seeds = "", out_dir = "", option = "", wiki_dump = "", lang = "";
@@ -80,6 +80,10 @@ public class HTMLExtractor {
         BufferedReader cl_reader = FileUtils.getFileReader(file);
         String line;
         while ((line = cl_reader.readLine()) != null) {
+            if (line.length() < 100) {
+                num_lines++;
+                continue;
+            }
             boolean is_unsourced = line.endsWith("N/A");
             lines.get(is_unsourced).add(num_lines);
             num_lines++;
@@ -88,7 +92,8 @@ public class HTMLExtractor {
 
 
         List<Integer> unsourced = new ArrayList<>(lines.get(true));
-        List<Integer> sourced = new ArrayList<>(lines.get(true));
+        List<Integer> sourced = new ArrayList<>(lines.get(false));
+        System.out.printf("There are %d sourced and %d unsourced statements.\n", sourced.size(), unsourced.size());
 
         Collections.shuffle(unsourced, rand);
         Collections.shuffle(sourced, rand);
