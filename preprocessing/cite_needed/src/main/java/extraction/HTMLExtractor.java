@@ -25,7 +25,7 @@ public class HTMLExtractor {
         String[] args1 = {"-entity_seeds", "/Users/besnik/Documents/L3S/unsourced_statements/all_featured_links.csv",
                 "-out_dir", "/Users/besnik/Documents/L3S/unsourced_statements/html_data_all_articles/",
                 "-wiki_dump", "/Users/besnik/Documents/L3S/unsourced_statements/html_data_all_articles/",
-                "-option", "sample", "-lang", "enwiki"};
+                "-option", "statements", "-lang", "itwiki"};
 
         args = args1;
         String entity_seeds = "", out_dir = "", option = "", wiki_dump = "", lang = "";
@@ -150,8 +150,8 @@ public class HTMLExtractor {
         Collections.shuffle(sourced, rand);
 
         Set<Integer> sampled_indices = new HashSet<>();
-        sampled_indices.addAll(unsourced.subList(0, num_samples));
-        sampled_indices.addAll(sourced.subList(0, num_samples));
+        sampled_indices.addAll(unsourced.subList(0, num_samples > unsourced.size() ? unsourced.size() : num_samples));
+        sampled_indices.addAll(sourced.subList(0, num_samples > sourced.size() ? unsourced.size() : num_samples));
         return sampled_indices;
     }
 
@@ -232,7 +232,7 @@ public class HTMLExtractor {
 
             for (int prg_id = 0; prg_id < paragraphs.size(); prg_id++) {
                 Element prg = paragraphs.get(prg_id);
-                String prg_text = prg.toString();
+                String prg_text = prg.text();
                 if (prg.id().isEmpty()) {
                     continue;
                 }
@@ -273,15 +273,15 @@ public class HTMLExtractor {
         String[] sentences = prg_raw_escaped_text.split("\\.\\s+");
 
         for (int i = 0; i < sentences.length; i++) {
-            String sentence = StringEscapeUtils.unescapeHtml4(sentences[i]);
+            Document sentence_doc = Jsoup.parse(sentences[i]);
+            String sentence = sentence_doc.text();
+
             //the sentence does not contain any citation
-            if (!sentence.contains("<sup about=") || sentence.length() < STATEMENT_LENGTH) {
+            if (!sentence_doc.select("sup").isEmpty() || sentence.length() < STATEMENT_LENGTH) {
                 continue;
             }
 
-            Document sentence_doc = Jsoup.parse(sentences[i]);
             Elements scs = sentence_doc.getElementsByClass("mw-ref");
-
             sb.append(page_id).append("\t").append(revision_id).append("\t").append(timestamp).append("\t").append(title).append("\t").
                     append(section_id).append("\t").append(section_name).append("\t").append(prg_idx).append("\t").append(i).append("\t").
                     append("<div class=\"sourced-statement\">").append(sentence.replaceAll("\n", "\\n")).append("</div>").append("\t");
