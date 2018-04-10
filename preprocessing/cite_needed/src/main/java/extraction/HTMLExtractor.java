@@ -25,7 +25,7 @@ public class HTMLExtractor {
         String[] args1 = {"-entity_seeds", "/Users/besnik/Documents/L3S/unsourced_statements/all_featured_links.csv",
                 "-out_dir", "/Users/besnik/Documents/L3S/unsourced_statements/html_data_all_articles/",
                 "-wiki_dump", "/Users/besnik/Documents/L3S/unsourced_statements/html_data_all_articles/",
-                "-option", "statements", "-lang", "itwiki"};
+                "-option", "sample", "-lang", "itwiki"};
 
         args = args1;
         String entity_seeds = "", out_dir = "", option = "", wiki_dump = "", lang = "";
