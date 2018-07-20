@@ -17,13 +17,9 @@ fields:
         - class: "ButtonOptionWidget"
           data: false
           label: "<citation-false-label>"
-  - class: FieldLayout
-    label: "<unsure-label>"
-    align: right
-    classes: ['inline-field']
-    fieldWidget:
-      name: "unsure"
-      class: CheckboxInputWidget
+        - class: "ButtonOptionWidget"
+          data: "none"
+          label: "<unsure-label>"
   - class: "FieldLayout"
     label: "<notes-true-label>"
     align: top
@@ -32,6 +28,8 @@ fields:
       name: "notes"
       class: "DropdownInputWidget"
       options:
+          - data:  "true-empty"
+            label: ""
           - data:  "true-1"
             label: "<citation-true-1-label>"
           - data:  "true-2"
@@ -56,13 +54,15 @@ fields:
       name: "notes"
       class: "DropdownInputWidget"
       options:
-          - data:  "true-1"
+          - data:  "false-empty"
+            label: ""
+          - data:  "false-1"
             label: "<citation-false-1-label>"
-          - data:  "true-2"
+          - data:  "false-2"
             label: "<citation-false-2-label>"
-          - data:  "true-3"
+          - data:  "false-3"
             label: "<citation-false-3-label>"
-          - data:  "true-4"
+          - data:  "false-4"
             label: "<citation-false-4-label>"
   - class: "FieldLayout"
     label: "<notes-label>"
@@ -76,10 +76,10 @@ fields:
 i18n:
   en:
     form-title: "Labeling Unsourced Statements"
-    notes-true-label: "Why 'yes'?"
-    notes-false-label: "Why 'no'?"
+    notes-true-label: "If you selected 'yes', please specify a reason for your choice."
+    notes-false-label: "If you selected 'no', please specify a reason for your choice."
     notes-label: "Comments:"
-    notes-help: "Please give additional comments or the reason for your choice"
+    notes-help: "If you selected 'no', please specify a reason for your choice."
     citation-label: "Should this statement have a citation?"
     citation-true-label: "yes"
     citation-false-label: "no"
