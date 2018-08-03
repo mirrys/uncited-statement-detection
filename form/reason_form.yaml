@@ -76,11 +76,11 @@ fields:
 i18n:
   en:
     form-title: "Labeling Unsourced Statements"
-    notes-true-label: "If you selected 'yes', please specify a reason for your choice."
-    notes-false-label: "If you selected 'no', please specify a reason for your choice."
-    notes-label: "Comments:"
-    notes-help: "If you selected 'no', please specify a reason for your choice."
-    citation-label: "Should this statement have a citation?"
+    notes-true-label: "If you selected 'yes', please specify the main reason for your choice."
+    notes-false-label: "If you selected 'no', please specify the main reason for your choice."
+    notes-label: "Comments/Other Reasons:"
+    notes-help: "If you selected 'other' above, please write here the main reason for your choice."
+    citation-label: "Should the statement below have a citation?"
     citation-true-label: "yes"
     citation-false-label: "no"
     unsure-label: "unsure"
@@ -100,5 +100,3 @@ i18n:
     citation-false-2-label: "The statement is about a plot or character of a book/movie that is the main subject of the article"
     citation-false-3-label: "The statement only contains claims that have been referenced elsewhere in the paragraph or article"
     citation-false-4-label: "The statement does not require a citation for reasons not listed above (please describe below)"
-
-
